@@ -1,4 +1,4 @@
-pragma solidity ^0.4.17;
+pragma solidity ^0.4.23;
 
 import {CarLib} from "./CarLib.sol";
 
@@ -55,7 +55,8 @@ contract Rental {
     
     //Car must be available
     require(carToBeRented.isAvailable == true);
-      
+
+
       //Assign Rentee to Sender
       carToBeRented.rentee = msg.sender;
       
@@ -74,9 +75,12 @@ contract Rental {
       
       //Get specified car 
       CarLib.Car memory specificCar = rentals[carId];
+
+      bool isAvailable = specificCar.owner != msg.sender;
+
       
       //Return data considered in rental process
-      return (specificCar.make,specificCar.licenseNumber, specificCar.owner ,specificCar.rentee, specificCar.isAvailable, specificCar.year , specificCar.carId);
+      return (specificCar.make,specificCar.licenseNumber, specificCar.owner ,specificCar.rentee, isAvailable, specificCar.year , specificCar.carId);
     }
 
     //Add RentableCar
@@ -88,7 +92,8 @@ contract Rental {
         uint count = getCarCount();
         //Increment Count
         //Construct Car Object
-        CarLib.Car memory newCar = CarLib.Car(make,true, 0x0 , owner, year,licenseNumber,count);
+        
+        CarLib.Car memory newCar = CarLib.Car(make, true, 0x0 , owner, year,licenseNumber,count);
         
         //Add to Array
         rentals.push(newCar);

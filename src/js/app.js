@@ -26,19 +26,21 @@ App = {
 
   initWeb3: function() {
     // Is there an injected web3 instance?
-    if (typeof web3 !== 'undefined') {
+    if (typeof web3 !== "undefined") {
       App.web3Provider = web3.currentProvider;
     } else {
       // If no injected web3 instance is detected, fall back to Ganache
-      App.web3Provider = new Web3.providers.HttpProvider('http://localhost:8545');
+      App.web3Provider = new Web3.providers.HttpProvider(
+        "http://localhost:7545"
+      );
     }
     web3 = new Web3(App.web3Provider);
-    console.log("web3 init")
+    console.log("web3 init");
     return App.initContract();
   },
 
   initContract: function() {
-    $.getJSON('Rental.json', function(data) {
+    $.getJSON("Rental.json", function(data) {
       // Get the necessary contract artifact file and instantiate it with truffle-contract
       var RentalArtifact = data;
       App.contracts.Rental = TruffleContract(RentalArtifact);
@@ -50,66 +52,61 @@ App = {
       return App.markRented();
     });
 
-    App.web3Provider = new Web3.providers.HttpProvider('http://localhost:8545');
+    App.web3Provider = new Web3.providers.HttpProvider("http://localhost:7545");
     return App.bindEvents();
   },
-
-
 
   markRented: function(rentals, account) {
     var rentalInstance;
 
-    App.contracts.Rental.deployed().then(function(instance) {
-      rentalInstance = instance;
-      return rentalInstance;
-    }).then(function(rentalInstance) {
-
-      rentalInstance.getCarCount().then(function(count){
-
-        App.getAllCars(rentalInstance, account,  Number(count));
+    App.contracts.Rental.deployed()
+      .then(function(instance) {
+        rentalInstance = instance;
+        return rentalInstance;
+      })
+      .then(function(rentalInstance) {
+        rentalInstance.getCarCount().then(function(count) {
+          App.getAllCars(rentalInstance, account, Number(count));
+        });
+      })
+      .catch(function(err) {
+        console.log(err.message);
       });
-
-    }).catch(function(err) {
-      console.log(err.message);
-    });
   },
 
   getAllCars: function(rentalInstance, account, count) {
+    var carsRow = $("#carsRow");
+    var carTemplate = $("#carTemplate");
 
-      var carsRow = $('#carsRow');
-      var carTemplate = $('#carTemplate');
+    carsRow.empty();
+    for (i = 0; i < count; i++) {
+      App.getCarInfo(rentalInstance, i).then(function(info) {
+        var owner = info[2];
 
-      carsRow.empty();
-      for (i = 0; i < count; i ++) {
-        App.getCarInfo(rentalInstance,i).then(function(info) {
-
-            var owner = info[2];
-
-            var make = info[0];
-            var isAvailable = info[4];
-            carTemplate.find('.panel-title').text(make);
-            carTemplate.find('.car-make').text(make);
-            carTemplate.find('.car-licenseNumber').text(info[1]);
-            carTemplate.find('.car-isAvailable').text(info[4]);
-            carTemplate.find('.car-year').text(info[5]);
-            carTemplate.find('.car-year').text(info[5]);
-            carTemplate.find('.btn-rent').attr('data-id', info[6]);
-            carTemplate.find('.btn-return').attr('data-id', info[6]);
-            carTemplate.find('.btn-rent').attr('disabled', !isAvailable);
-            carsRow.append(carTemplate.html());
-        });
-      }
+        var make = info[0];
+        var isAvailable = info[4];
+        carTemplate.find(".panel-title").text(make);
+        carTemplate.find(".car-make").text(make);
+        carTemplate.find(".car-licenseNumber").text(info[1]);
+        carTemplate.find(".car-isAvailable").text(info[4]);
+        carTemplate.find(".car-year").text(info[5]);
+        carTemplate.find(".car-year").text(info[5]);
+        carTemplate.find(".btn-rent").attr("data-id", info[6]);
+        carTemplate.find(".btn-return").attr("data-id", info[6]);
+        carTemplate.find(".btn-rent").attr("disabled", !isAvailable);
+        carsRow.append(carTemplate.html());
+      });
+    }
   },
 
-
-  getCarInfo: async function (rentalInstance, i) {
+  getCarInfo: async function(rentalInstance, i) {
     return await rentalInstance.getRentalCarInfo(i);
   },
 
   handleRent: function(event) {
     event.preventDefault();
 
-    var carId = parseInt($(event.target).data('id'));
+    var carId = parseInt($(event.target).data("id"));
     var rentalnInstance;
 
     web3.eth.getAccounts(function(error, accounts) {
@@ -119,57 +116,63 @@ App = {
 
       var account = accounts[0];
 
-      App.contracts.Rental.deployed().then(function(instance) {
-        rentalnInstance = instance;
+      App.contracts.Rental.deployed()
+        .then(function(instance) {
+          rentalnInstance = instance;
 
-        // Execute rent as a transaction by sending account
-        return rentalnInstance.rent(carId, {from: account, gas:3000000});
-      }).then(function(result, account) {
-
-        return App.markRented(account);
-      }).catch(function(err) {
-        console.log(err.message);
-      });
+          // Execute rent as a transaction by sending account
+          return rentalnInstance.rent(carId, { from: account, gas: 3000000 });
+        })
+        .then(function(result, account) {
+          return App.markRented(account);
+        })
+        .catch(function(err) {
+          console.log(err.message);
+        });
     });
   },
 
   handleAddCar: function(event) {
     event.preventDefault();
 
-    var carId = parseInt($(event.target).data('id'));
+    var carId = parseInt($(event.target).data("id"));
     var rentalnInstance;
 
     web3.eth.getAccounts(function(error, accounts) {
       if (error) {
-        console.log(error);
+        console.log(error, "error rrr");
       }
 
       var account = accounts[0];
 
-      App.contracts.Rental.deployed().then(function(instance) {
-        rentalnInstance = instance;
+      App.contracts.Rental.deployed()
+        .then(function(instance) {
+          rentalnInstance = instance;
 
+          var make = document.getElementById("makeInfo").value;
+          var owner = document.getElementById("owner").value;
+          var year = document.getElementById("year").value;
+          var license = document.getElementById("licenseNumber").value;
 
-        var make = document.getElementById("makeInfo").value;
-        var owner = document.getElementById("owner").value;
-        var year = document.getElementById("year").value;
-        var license = document.getElementById("licenseNumber").value;
-
-        // Execute rent as a transaction by sending account
-        return rentalnInstance.addNewCar(make,owner,license,year, {from: account, gas:3000000});
-      }).then(function(result) {
-        return App.markRented();
-      }).catch(function(err) {
-        console.log(err.message);
-      });
+          // Execute rent as a transaction by sending account
+          return rentalnInstance.addNewCar(make, owner, license, year, {
+            from: account,
+            gas: 3000000
+          });
+        })
+        .then(function(result) {
+          return App.markRented();
+        })
+        .catch(function(err) {
+          console.log(err.message);
+        });
     });
   },
-
 
   handleReturnCar: function(event) {
     event.preventDefault();
 
-    var carId = parseInt($(event.target).data('id'));
+    var carId = parseInt($(event.target).data("id"));
     var rentalnInstance;
 
     web3.eth.getAccounts(function(error, accounts) {
@@ -179,32 +182,62 @@ App = {
 
       var account = accounts[0];
 
-      App.contracts.Rental.deployed().then(function(instance) {
-        rentalnInstance = instance;
+      App.contracts.Rental.deployed()
+        .then(function(instance) {
+          rentalnInstance = instance;
 
-
-        console.log(carId);
-        // Execute rent as a transaction by sending account
-        return rentalnInstance.returnCar(carId, {from: account, gas:3000000});
-      }).then(function(result) {
-        return App.markRented();
-      }).catch(function(err) {
-        console.log(err.message);
-      });
+          console.log(carId);
+          // Execute rent as a transaction by sending account
+          return rentalnInstance.returnCar(carId, {
+            from: account,
+            gas: 3000000
+          });
+        })
+        .then(function(result) {
+          return App.markRented();
+        })
+        .catch(function(err) {
+          console.log(err.message);
+        });
     });
   },
 
   bindEvents: function() {
-    $(document).on('click', '.btn-rent', App.handleRent);
-    $(document).on('click', '.btn-return', App.handleReturnCar);
-    $(document).on('click', '.btn-addCar', App.handleAddCar);
+    $(document).on("click", ".btn-rent", App.handleRent);
+    $(document).on("click", ".btn-return", App.handleReturnCar);
+    $(document).on("click", ".btn-addCar", App.handleAddCar);
   }
-
-
 };
 
-$(function() {
-  $(window).load(function() {
+// $(function() {
+//   $(window).load(function() {
+//     App.init();
+//   });
+// });
+
+window.addEventListener("load", async () => {
+  // Modern dapp browsers...
+  if (window.ethereum) {
+    window.web3 = new Web3(ethereum);
+    try {
+      // Request account access if needed
+      await ethereum.enable();
+      // Acccounts now exposed
+      App.init();
+    } catch (error) {
+      // User denied account access...
+    }
+  }
+  // Legacy dapp browsers...
+  else if (window.web3) {
+    window.web3 = new Web3(web3.currentProvider);
+    // Acccounts always exposed
     App.init();
-  });
+  }
+  // Non-dapp browsers...
+  else {
+    console.log(
+      "Non-Ethereum browser detected. You should consider trying MetaMask!"
+    );
+  }
 });
